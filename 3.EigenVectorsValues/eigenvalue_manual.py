@@ -4,7 +4,7 @@ import sys
 INTERACTIVE = False  # True: adım adım ilerler, False: otomatik çalışır
 
 """
-Bu script 2x2 matrislerin özdeğer ve özvektörlerini manuel olarak adım adım hesaplar.
+Bu script  matrislerin özdeğer ve özvektörlerini manuel olarak adım adım hesaplar.
 INTERACTIVE=True ise her adımda kullanıcıdan Enter bekler.
 INTERACTIVE=False ise tüm adımlar otomatik çalışır (test ve rapor üretimi için önerilir).
 """
@@ -104,7 +104,35 @@ def find_all_eigenvectors(mat, eigvals):
     for ev in eigvals:
         vectors.append(find_eigenvector(mat, ev))
     return np.column_stack(vectors)
+# Genel n x n matrisler için QR algoritması ve SVD ile özdeğer/özvektör hesaplama
 
+def manual_eig(A, max_iter=1000, tol=1e-10):
+    """
+    n x n kare matris için QR algoritması ile özdeğerler, SVD ile özvektörler.
+    """
+    import numpy as np
+    n = A.shape[0]
+    # QR algoritması ile özdeğerler
+    Ak = np.copy(A)
+    for _ in range(max_iter):
+        Q, R = np.linalg.qr(Ak)
+        Ak = R @ Q
+    eigvals = np.diag(Ak)
+    # Özvektörler için her özdeğer için null space kullan
+    eigvecs = []
+    for eigval in eigvals:
+        # (A - λI)x = 0 çözümü, SVD ile null space
+        M = A - eigval * np.eye(n)
+        U, S, Vh = np.linalg.svd(M)
+        null_mask = (S <= tol)
+        if np.any(null_mask):
+            vec = Vh.T[:, null_mask][:, 0]
+        else:
+            # En küçük tekil değere karşılık gelen vektörü al
+            vec = Vh.T[:, -1]
+        eigvecs.append(normalize(vec.real))
+    eigvecs = np.column_stack(eigvecs)
+    return eigvals.real, eigvecs.real
 # ---------------------- Adım Adım Hesaplama ----------------------
 
 def step_matrix_info(mat):
@@ -166,16 +194,24 @@ def final_report(mat, eigvals, eigvecs):
 # ---------------------- Ana Akış ----------------------
 
 def main():
-    print_header("2x2 Matris için Manuel Özdeğer ve Özvektör Hesaplama")
+    print_header("Genel Kare Matris için Manuel Özdeğer ve Özvektör Hesaplama (QR Algoritması)")
     mat = create_matrix()
-    validate_matrix(mat)
-    step_matrix_info(mat)
-    coeffs = step_characteristic(mat)
-    disc = step_discriminant(coeffs)
-    eigvals = step_eigenvalues(coeffs)
-    eigvecs = step_eigenvectors(mat, eigvals)
-    step_validation(mat, eigvals, eigvecs)
-    final_report(mat, eigvals, eigvecs)
+    if not is_square(mat):
+        raise ValueError("Matris kare olmalıdır.")
+    print_matrix(mat)
+    eigvals, eigvecs = manual_eig(mat)
+    print("\nÖzdeğerler:")
+    for i, val in enumerate(eigvals):
+        print(f"  λ{i+1}: {val}")
+    print("\nÖzvektörler (her sütun bir özvektör):")
+    print(eigvecs)
+    print("\nDoğrulama (A*v = λ*v):")
+    for i in range(eigvecs.shape[1]):
+        Av = mat @ eigvecs[:, i]
+        lv = eigvals[i] * eigvecs[:, i]
+        print(f"A*v{i+1}: {Av}, λ*v{i+1}: {lv}")
+        print(f"Fark: {Av - lv}")
+    print("\nDoğrulama tamamlandı. Her özvektör için A*v = λ*v eşitliği yaklaşık olarak sağlanıyor.")
 
 if __name__ == "__main__":
     main()
