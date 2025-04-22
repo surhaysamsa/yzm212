@@ -22,8 +22,14 @@ This repository contains a data preprocessing script for the diabetes dataset, w
 │   ├── data_reference.txt
 │   ├── diabetes.csv
 │   └── yzm212_l2_2425.pdf
+├── 3.EigenVectorsValues
+│   ├── compare_results.py          
+│   ├── eigenvalue_manual.py        
+│   ├── eigenvalue_numpy.py            
+│   └── README.md                     
 ├── README.md
 └── requirements.txt
+
 ```
 
 ## Requirements
